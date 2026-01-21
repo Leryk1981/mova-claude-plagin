@@ -1,0 +1,164 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mova.dev/schemas/episode_v1.schema.json",
+  "title": "MOVA Episode",
+  "description": "Schema for MOVA episodes (MOVA 4.1.1 compatible)",
+  "type": "object",
+  "required": ["episode_id", "episode_type", "mova_version", "recorded_at", "executor", "result_status", "result_summary"],
+  "properties": {
+    "episode_id": {
+      "type": "string",
+      "pattern": "^ep_[0-9]+_[a-z0-9]{6}$",
+      "description": "Unique episode identifier"
+    },
+    "episode_type": {
+      "type": "string",
+      "enum": ["execution", "plan", "security_event", "other"],
+      "description": "Type of episode"
+    },
+    "mova_version": {
+      "type": "string",
+      "const": "4.1.1",
+      "description": "MOVA specification version"
+    },
+    "recorded_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the episode was recorded"
+    },
+    "started_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the episode started"
+    },
+    "finished_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "When the episode finished"
+    },
+    "executor": {
+      "type": "object",
+      "required": ["executor_id"],
+      "properties": {
+        "executor_id": {
+          "type": "string",
+          "description": "Identifier of the executor"
+        },
+        "role": {
+          "type": "string",
+          "enum": ["agent", "reviewer", "router", "user", "validator", "service"],
+          "description": "Role of the executor"
+        },
+        "executor_kind": {
+          "type": "string",
+          "enum": ["human", "AI model", "service", "tool", "hybrid"],
+          "description": "Kind of executor"
+        }
+      },
+      "additionalProperties": false
+    },
+    "result_status": {
+      "type": "string",
+      "enum": ["pending", "in_progress", "completed", "failed", "partial", "cancelled", "skipped"],
+      "description": "Status of the episode result"
+    },
+    "result_summary": {
+      "type": "string",
+      "description": "Brief summary of the result"
+    },
+    "result_details": {
+      "type": "object",
+      "properties": {
+        "duration_ms": {
+          "type": ["integer", "null"],
+          "description": "Duration in milliseconds"
+        },
+        "tokens_used": {
+          "type": ["integer", "null"],
+          "description": "Tokens consumed"
+        },
+        "tool_name": {
+          "type": ["string", "null"],
+          "description": "Name of the tool used"
+        },
+        "exit_code": {
+          "type": ["integer", "null"],
+          "description": "Exit code if applicable"
+        },
+        "files_affected": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Files affected by the operation"
+        },
+        "stdout_tail": {
+          "type": ["string", "null"],
+          "description": "Tail of stdout (redacted)"
+        },
+        "stderr_tail": {
+          "type": ["string", "null"],
+          "description": "Tail of stderr (redacted)"
+        },
+        "input_hash": {
+          "type": ["string", "null"],
+          "description": "SHA256 hash of input"
+        },
+        "output_hash": {
+          "type": ["string", "null"],
+          "description": "SHA256 hash of output"
+        }
+      },
+      "additionalProperties": true
+    },
+    "meta_episode": {
+      "type": "object",
+      "properties": {
+        "correlation_id": {
+          "type": "string",
+          "description": "Correlation ID for the session"
+        },
+        "session_id": {
+          "type": "string",
+          "description": "Session identifier"
+        },
+        "parent_episode_id": {
+          "type": ["string", "null"],
+          "description": "Parent episode ID for nested operations"
+        },
+        "trace_id": {
+          "type": ["string", "null"],
+          "description": "Distributed tracing ID"
+        }
+      },
+      "additionalProperties": false
+    },
+    "security_event": {
+      "$ref": "security_event_v1.schema.json"
+    },
+    "compliance": {
+      "type": "object",
+      "properties": {
+        "data_classification": {
+          "type": "string",
+          "enum": ["public", "internal", "confidential", "restricted"],
+          "description": "Data classification level"
+        },
+        "retention_days": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Retention period in days"
+        },
+        "exportable": {
+          "type": "boolean",
+          "description": "Whether episode can be exported"
+        },
+        "redacted_fields": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Fields that were redacted"
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

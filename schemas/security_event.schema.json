@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mova.dev/schemas/security_event_v1.schema.json",
+  "title": "MOVA Security Event",
+  "description": "Schema for MOVA security events within episodes",
+  "type": "object",
+  "required": ["event_type", "severity", "actions_taken", "detection_confidence"],
+  "properties": {
+    "event_type": {
+      "type": "string",
+      "enum": [
+        "instruction_profile_invalid",
+        "prompt_injection_suspected",
+        "forbidden_tool_requested",
+        "rate_limit_exceeded",
+        "sensitive_data_access_suspected",
+        "guardrail_violation"
+      ],
+      "description": "Type of security event"
+    },
+    "severity": {
+      "type": "string",
+      "enum": ["info", "low", "medium", "high", "critical"],
+      "description": "Severity level of the event"
+    },
+    "actions_taken": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": ["log", "warn", "alert", "block", "fallback"]
+      },
+      "description": "Actions taken in response to the event"
+    },
+    "detection_confidence": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1,
+      "description": "Confidence level of detection (0-1)"
+    },
+    "rule_id": {
+      "type": ["string", "null"],
+      "description": "ID of the guardrail rule that triggered (if applicable)"
+    },
+    "detection_source": {
+      "type": "string",
+      "description": "Source of detection (pattern, heuristic, etc.)"
+    },
+    "matched_patterns": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Number of patterns matched"
+    },
+    "details": {
+      "type": "string",
+      "description": "Additional details about the event"
+    }
+  },
+  "additionalProperties": false
+}

@@ -1,0 +1,61 @@
+{
+  "preset_id": "production",
+  "$preset": "production",
+  "$inherit": "base",
+  "description": "Locked-down production with audit logging",
+  "policy": {
+    "permissions": {
+      "allow": ["Read", "Glob", "Grep"],
+      "deny": ["Bash.*rm", "Bash.*sudo", "Write.*\\.env"],
+      "on_conflict": "deny_wins",
+      "on_unknown": "deny"
+    }
+  },
+  "guardrail_rules": [
+    {
+      "rule_id": "block-all-destructive",
+      "description": "Block all destructive bash commands",
+      "effect": "deny",
+      "target": {
+        "tool": "Bash",
+        "pattern": "rm|mv|chmod|chown|kill"
+      },
+      "severity": "high",
+      "on_violation": ["block", "alert", "log"],
+      "enabled": true
+    },
+    {
+      "rule_id": "protect-all-secrets",
+      "description": "Block access to secret files",
+      "effect": "deny",
+      "target": {
+        "path_glob": "**/*.{env,pem,key,secret}"
+      },
+      "severity": "critical",
+      "on_violation": ["block", "alert"],
+      "enabled": true
+    }
+  ],
+  "human_in_the_loop": {
+    "escalation_threshold": "medium",
+    "auto_approve": ["Read", "Glob", "Grep", "WebSearch"],
+    "always_confirm": [
+      { "tool": "Edit", "description": "File edit operation" },
+      { "tool": "Write", "description": "File write operation" },
+      { "tool": "Bash", "description": "Shell command execution" },
+      { "tool": "Bash", "pattern": "rm|mv|chmod", "description": "Destructive shell operation" },
+      { "tool": "Write", "path_glob": "**/.env*", "description": "Environment file modification" },
+      { "tool": "Edit", "path_glob": "**/secret*", "description": "Secret file modification" }
+    ],
+    "confirmation_timeout_ms": 60000
+  },
+  "observability": {
+    "enabled": true,
+    "otel_enabled": true
+  },
+  "retention": {
+    "episodes_days": 365,
+    "security_events_days": 730,
+    "auto_cleanup": false
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "name": "mova",
+  "version": "0.3.0",
+  "description": "MOVA - Monitoring, Observing, Validating Agent layer for Claude Code",
+  "author": {
+    "name": "Sergii Miasoiedov"
+  },
+  "repository": "https://github.com/Leryk1981/mova-claude-plagin",
+  "license": "MIT",
+  "keywords": ["monitoring", "observability", "validation", "guard", "hooks", "security"]
+}

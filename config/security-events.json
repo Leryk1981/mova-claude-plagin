@@ -1,0 +1,114 @@
+{
+  "$schema": "https://mova.dev/schemas/security_event_catalog_v1.json",
+  "version": "1.0.0",
+  "event_types": {
+    "instruction_profile_invalid": {
+      "description": "Control profile missing, invalid, or incompatible",
+      "default_severity": "high",
+      "default_actions": ["block", "alert"],
+      "detection_patterns": []
+    },
+    "prompt_injection_suspected": {
+      "description": "Suspicious patterns detected in user prompt",
+      "default_severity": "medium",
+      "default_actions": ["warn", "log"],
+      "detection_patterns": [
+        "ignore\\s+(previous|above|all)\\s+instructions",
+        "you\\s+are\\s+now\\s+",
+        "disregard\\s+(your|the)\\s+(rules|instructions)",
+        "\\[SYSTEM\\]",
+        "\\{\\{.*\\}\\}",
+        "pretend\\s+you\\s+are",
+        "act\\s+as\\s+if",
+        "forget\\s+(everything|all)",
+        "<\\s*script\\s*>",
+        "eval\\s*\\("
+      ]
+    },
+    "forbidden_tool_requested": {
+      "description": "Attempt to use denied tool",
+      "default_severity": "high",
+      "default_actions": ["block", "log"],
+      "detection_patterns": []
+    },
+    "rate_limit_exceeded": {
+      "description": "API or operation rate limit exceeded",
+      "default_severity": "low",
+      "default_actions": ["fallback", "log"],
+      "detection_patterns": []
+    },
+    "sensitive_data_access_suspected": {
+      "description": "Attempt to access secrets or credentials",
+      "default_severity": "critical",
+      "default_actions": ["block", "alert"],
+      "detection_patterns": [
+        "\\.env$",
+        "\\.pem$",
+        "\\.key$",
+        "\\.secret$",
+        "id_rsa",
+        "id_ed25519",
+        "credentials\\.json",
+        "secrets\\.yaml",
+        "/etc/passwd",
+        "/etc/shadow",
+        "~/.ssh/",
+        "aws_access_key",
+        "api[_-]?key\\s*[:=]",
+        "password\\s*[:=]",
+        "token\\s*[:=]",
+        "bearer\\s+"
+      ]
+    },
+    "guardrail_violation": {
+      "description": "Guardrail rule triggered",
+      "default_severity": "varies",
+      "default_actions": ["varies"],
+      "detection_patterns": []
+    }
+  },
+  "action_types": {
+    "log": {
+      "description": "Document for audit without blocking",
+      "blocking": false
+    },
+    "warn": {
+      "description": "Log and show warning to user",
+      "blocking": false
+    },
+    "alert": {
+      "description": "Notify administrators",
+      "blocking": false
+    },
+    "block": {
+      "description": "Prevent the action",
+      "blocking": true
+    },
+    "fallback": {
+      "description": "Switch to restricted mode",
+      "blocking": false
+    }
+  },
+  "severity_levels": {
+    "info": {
+      "priority": 0,
+      "description": "Informational, no action required"
+    },
+    "low": {
+      "priority": 1,
+      "description": "Minor issue, log and continue"
+    },
+    "medium": {
+      "priority": 2,
+      "description": "Moderate issue, may require confirmation"
+    },
+    "high": {
+      "priority": 3,
+      "description": "Serious issue, block and notify"
+    },
+    "critical": {
+      "priority": 4,
+      "description": "Critical issue, immediate block and escalate"
+    }
+  }
+}

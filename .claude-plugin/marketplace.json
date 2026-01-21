@@ -1,0 +1,14 @@
+{
+  "name": "mova-plugins",
+  "owner": {
+    "name": "MOVA Team",
+    "url": "https://github.com/Leryk1981"
+  },
+  "plugins": [
+    {
+      "name": "mova",
+      "source": "./",
+      "description": "MOVA - Monitoring, Observing, Validating Agent layer for Claude Code"
+    }
+  ]
+}

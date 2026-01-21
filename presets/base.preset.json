@@ -1,0 +1,41 @@
+{
+  "preset_id": "base",
+  "$preset": "base",
+  "description": "Minimal safe configuration",
+  "policy": {
+    "permissions": {
+      "allow": ["Read", "Glob", "Grep"],
+      "deny": [],
+      "on_conflict": "deny_wins",
+      "on_unknown": "report_only"
+    }
+  },
+  "guardrail_rules": [
+    {
+      "rule_id": "block-rm-rf",
+      "description": "Block recursive force delete on root paths",
+      "effect": "deny",
+      "target": {
+        "tool": "Bash",
+        "pattern": "rm\\s+-rf\\s+[/~]"
+      },
+      "severity": "critical",
+      "on_violation": ["block", "log"],
+      "enabled": true
+    }
+  ],
+  "human_in_the_loop": {
+    "escalation_threshold": "high",
+    "auto_approve": ["Read", "Glob", "Grep"],
+    "always_confirm": [],
+    "confirmation_timeout_ms": 60000
+  },
+  "observability": {
+    "enabled": true,
+    "otel_enabled": false
+  },
+  "retention": {
+    "episodes_days": 30,
+    "auto_cleanup": true
+  }
+}

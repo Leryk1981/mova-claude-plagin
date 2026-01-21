@@ -1,0 +1,65 @@
+{
+  "name": "mova-claude-plugin",
+  "version": "0.3.0",
+  "description": "MOVA - Monitoring, Observing, Validating Agent plugin for Claude Code",
+  "main": "index.js",
+  "types": "index.d.ts",
+  "bin": {
+    "mova-guard": "./scripts/mova-guard.js",
+    "mova-observe": "./scripts/mova-observe.js",
+    "mova-security": "./scripts/mova-security.js",
+    "mova-dashboard": "./services/dashboard_server.js"
+  },
+  "files": [
+    ".claude-plugin/",
+    "commands/",
+    "agents/",
+    "skills/",
+    "hooks/",
+    "scripts/",
+    "services/",
+    "presets/",
+    "rules/",
+    "config/",
+    "schemas/",
+    "index.js",
+    "index.d.ts",
+    "LICENSE",
+    "README.md",
+    "CHANGELOG.md",
+    "OPERATOR_GUIDE_v0.md"
+  ],
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "keywords": [
+    "claude-code",
+    "claude-code-plugin",
+    "mova",
+    "monitoring",
+    "observability",
+    "validation",
+    "security",
+    "guardrails",
+    "human-in-the-loop",
+    "audit",
+    "opentelemetry",
+    "otel"
+  ],
+  "author": {
+    "name": "MOVA Team",
+    "url": "https://github.com/mova"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Leryk1981/mova-claude-plagin.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Leryk1981/mova-claude-plagin/issues"
+  },
+  "homepage": "https://github.com/Leryk1981/mova-claude-plagin#readme",
+  "publishConfig": {
+    "access": "public"
+  }
+}

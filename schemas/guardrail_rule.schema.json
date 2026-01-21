@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mova.dev/schemas/guardrail_rule_v1.schema.json",
+  "title": "MOVA Guardrail Rule",
+  "description": "Schema for MOVA guardrail rules",
+  "type": "object",
+  "required": ["rule_id", "effect", "severity"],
+  "properties": {
+    "rule_id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9-]*$",
+      "description": "Unique identifier for the rule"
+    },
+    "description": {
+      "type": "string",
+      "description": "Human-readable description of the rule"
+    },
+    "effect": {
+      "type": "string",
+      "enum": ["allow", "deny", "warn", "log_only", "transform"],
+      "description": "Action to take when rule matches"
+    },
+    "target": {
+      "type": "object",
+      "description": "Target specification for the rule",
+      "properties": {
+        "tool": {
+          "type": "string",
+          "description": "Tool name pattern (regex)"
+        },
+        "pattern": {
+          "type": "string",
+          "description": "Input pattern to match (regex)"
+        },
+        "path_glob": {
+          "type": "string",
+          "description": "File path glob pattern"
+        }
+      },
+      "additionalProperties": false
+    },
+    "severity": {
+      "type": "string",
+      "enum": ["info", "low", "medium", "high", "critical"],
+      "description": "Severity level of the rule"
+    },
+    "on_violation": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": ["log", "warn", "alert", "block", "require_confirmation", "fallback"]
+      },
+      "description": "Actions to take when rule is violated"
+    },
+    "enabled": {
+      "type": "boolean",
+      "default": true,
+      "description": "Whether the rule is active"
+    },
+    "tags": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Tags for categorization"
+    }
+  },
+  "additionalProperties": false
+}

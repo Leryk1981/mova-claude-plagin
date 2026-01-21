@@ -1,0 +1,42 @@
+{
+  "preset_id": "development",
+  "$preset": "development",
+  "$inherit": "base",
+  "description": "Full development access with verbose logging",
+  "policy": {
+    "permissions": {
+      "allow": ["Bash", "Read", "Edit", "Write", "Glob", "Grep", "WebSearch", "WebFetch"],
+      "on_unknown": "allow"
+    }
+  },
+  "guardrail_rules": [
+    {
+      "rule_id": "warn-sudo",
+      "description": "Warn on sudo usage",
+      "effect": "warn",
+      "target": {
+        "tool": "Bash",
+        "pattern": "^sudo\\s+"
+      },
+      "severity": "medium",
+      "on_violation": ["warn", "log"],
+      "enabled": true
+    }
+  ],
+  "human_in_the_loop": {
+    "escalation_threshold": "critical",
+    "auto_approve": ["Read", "Glob", "Grep", "Edit", "Write", "WebSearch", "WebFetch"],
+    "always_confirm": [
+      { "tool": "Bash", "pattern": "rm\\s+-rf", "description": "Recursive force delete" },
+      { "tool": "Bash", "pattern": "sudo", "description": "Privileged command" }
+    ],
+    "confirmation_timeout_ms": 30000
+  },
+  "monitoring": {
+    "enabled": true,
+    "port": 2773
+  },
+  "environs": {
+    "MOVA_DEBUG": true
+  }
+}

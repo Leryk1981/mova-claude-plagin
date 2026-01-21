@@ -1,0 +1,36 @@
+{
+  "$schema": "https://mova.dev/schemas/skill_rules_v1.schema.json",
+  "threshold": 0.6,
+  "skills": [
+    {
+      "id": "testing-patterns",
+      "name": "Testing Patterns",
+      "keywords": ["test", "tdd", "mock", "coverage", "jest", "vitest", "spec", "assert", "expect"],
+      "weight": 0.8
+    },
+    {
+      "id": "systematic-debugging",
+      "name": "Systematic Debugging",
+      "keywords": ["debug", "trace", "repro", "bug", "error", "fix", "issue", "breakpoint", "stacktrace"],
+      "weight": 0.7
+    },
+    {
+      "id": "security-basics",
+      "name": "Security Basics",
+      "keywords": ["security", "vuln", "xss", "csrf", "auth", "injection", "sanitize", "escape", "encrypt"],
+      "weight": 0.8
+    },
+    {
+      "id": "git-workflow",
+      "name": "Git Workflow",
+      "keywords": ["git", "branch", "merge", "rebase", "commit", "push", "pull", "checkout", "stash"],
+      "weight": 0.7
+    },
+    {
+      "id": "mova-layer-v0",
+      "name": "MOVA Layer",
+      "keywords": ["mova", "observe", "guard", "episode", "hook", "control", "preset", "guardrail"],
+      "weight": 0.9
+    }
+  ]
+}

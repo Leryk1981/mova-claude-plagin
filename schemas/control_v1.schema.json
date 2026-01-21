@@ -1,0 +1,196 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mova.dev/schemas/control_v1.schema.json",
+  "title": "MOVA Control Profile",
+  "description": "Schema for MOVA control configuration (Instruction Profile)",
+  "type": "object",
+  "required": ["profile_id", "profile_version", "mova_version", "status"],
+  "properties": {
+    "$schema": {
+      "type": "string"
+    },
+    "profile_id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*$",
+      "description": "Canonical profile identifier"
+    },
+    "profile_version": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$",
+      "description": "Semantic version of the profile"
+    },
+    "mova_version": {
+      "type": "string",
+      "description": "MOVA specification version"
+    },
+    "security_model_version": {
+      "type": "string",
+      "description": "Security model version"
+    },
+    "status": {
+      "type": "string",
+      "enum": ["draft", "active", "deprecated"],
+      "description": "Profile status"
+    },
+    "applies_to": {
+      "type": "object",
+      "properties": {
+        "executor_kinds": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Kinds of executors this applies to"
+        },
+        "roles": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Roles this applies to"
+        },
+        "tags": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Tags for filtering"
+        }
+      },
+      "additionalProperties": false
+    },
+    "policy": {
+      "type": "object",
+      "properties": {
+        "permissions": {
+          "type": "object",
+          "properties": {
+            "allow": {
+              "type": "array",
+              "items": { "type": "string" },
+              "description": "Allowed tools/patterns"
+            },
+            "deny": {
+              "type": "array",
+              "items": { "type": "string" },
+              "description": "Denied tools/patterns"
+            },
+            "on_conflict": {
+              "type": "string",
+              "enum": ["allow_wins", "deny_wins"],
+              "description": "Conflict resolution strategy"
+            },
+            "on_unknown": {
+              "type": "string",
+              "enum": ["allow", "deny", "report_only"],
+              "description": "Behavior for unknown tools"
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": true
+    },
+    "guardrail_rules": {
+      "type": "array",
+      "items": { "$ref": "guardrail_rule_v1.schema.json" },
+      "description": "List of guardrail rules"
+    },
+    "human_in_the_loop": {
+      "type": "object",
+      "properties": {
+        "escalation_threshold": {
+          "type": "string",
+          "enum": ["info", "low", "medium", "high", "critical"],
+          "description": "Minimum severity to escalate"
+        },
+        "auto_approve": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Tools to auto-approve"
+        },
+        "always_confirm": {
+          "type": "array",
+          "items": {
+            "oneOf": [
+              { "type": "string" },
+              {
+                "type": "object",
+                "properties": {
+                  "tool": { "type": "string" },
+                  "pattern": { "type": "string" }
+                }
+              }
+            ]
+          },
+          "description": "Tools that always require confirmation"
+        },
+        "confirmation_timeout_ms": {
+          "type": "integer",
+          "minimum": 1000,
+          "description": "Timeout for confirmation"
+        }
+      },
+      "additionalProperties": false
+    },
+    "observability": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "description": "Enable observability"
+        },
+        "episodes_dir": {
+          "type": "string",
+          "description": "Directory for episodes"
+        },
+        "otel_enabled": {
+          "type": "boolean",
+          "description": "Enable OpenTelemetry export"
+        }
+      },
+      "additionalProperties": true
+    },
+    "monitoring": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "description": "Enable monitoring dashboard"
+        },
+        "port": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 65535,
+          "description": "Dashboard port"
+        }
+      },
+      "additionalProperties": true
+    },
+    "retention": {
+      "type": "object",
+      "properties": {
+        "episodes_days": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Episode retention in days"
+        },
+        "security_events_days": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Security event retention in days"
+        },
+        "metrics_days": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Metrics retention in days"
+        },
+        "auto_cleanup": {
+          "type": "boolean",
+          "description": "Enable automatic cleanup"
+        }
+      },
+      "additionalProperties": false
+    },
+    "environs": {
+      "type": "object",
+      "additionalProperties": true,
+      "description": "Environment variable overrides"
+    }
+  },
+  "additionalProperties": true
+}

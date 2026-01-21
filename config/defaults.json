@@ -1,0 +1,54 @@
+{
+  "$schema": "https://mova.dev/schemas/control_v1.schema.json",
+  "profile_id": "mova_claude_control_v1",
+  "profile_version": "1.0.0",
+  "mova_version": "4.1.1",
+  "security_model_version": "mova_security_default_v1",
+  "status": "active",
+
+  "applies_to": {
+    "executor_kinds": ["AI model"],
+    "roles": ["agent"],
+    "tags": ["claude-code"]
+  },
+
+  "policy": {
+    "permissions": {
+      "allow": ["Read", "Glob", "Grep"],
+      "deny": [],
+      "on_conflict": "deny_wins",
+      "on_unknown": "report_only"
+    }
+  },
+
+  "guardrail_rules": [],
+
+  "human_in_the_loop": {
+    "escalation_threshold": "high",
+    "auto_approve": [],
+    "always_confirm": [],
+    "confirmation_timeout_ms": 60000
+  },
+
+  "observability": {
+    "enabled": true,
+    "episodes_dir": ".mova/episodes",
+    "otel_enabled": false
+  },
+
+  "monitoring": {
+    "enabled": false,
+    "port": 2773
+  },
+
+  "retention": {
+    "episodes_days": 90,
+    "security_events_days": 365,
+    "metrics_days": 30,
+    "auto_cleanup": true
+  },
+
+  "environs": {
+    "MOVA_DEBUG": false
+  }
+}
