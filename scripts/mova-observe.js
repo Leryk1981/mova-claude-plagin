@@ -35,6 +35,12 @@ function loadControlConfig() {
   return null;
 }
 
+function debugHooksEnabled() {
+  if (process.env.MOVA_DEBUG_HOOKS === 'true') return true;
+  const config = loadControlConfig();
+  return config?.observability?.debug_hooks === true;
+}
+
 function isOtelEnabled() {
   const config = loadControlConfig();
   return config?.observability?.otel_enabled === true ||
@@ -132,6 +138,37 @@ function mapResultStatus(toolStatus) {
   if (toolStatus === '0' || toolStatus === 0) return 'completed';
   if (toolStatus === undefined || toolStatus === null) return 'in_progress';
   return 'failed';
+}
+
+function writeHookDebugSnapshot(root, sessionId, correlationId, eventType) {
+  if (!debugHooksEnabled()) return;
+
+  const debugDir = path.join(root, '..', 'debug');
+  ensureDir(debugDir);
+
+  const envKeys = Object.keys(env).filter(key => key.startsWith('CLAUDE_')).sort();
+  const entry = {
+    ts: new Date().toISOString(),
+    session_id: sessionId,
+    correlation_id: correlationId,
+    event_type: eventType,
+    tool: {
+      name: env.CLAUDE_TOOL_NAME || null,
+      status: env.CLAUDE_TOOL_STATUS ?? null,
+      duration_ms: env.CLAUDE_TOOL_DURATION_MS ?? null,
+      input_file_path: env.CLAUDE_TOOL_INPUT_FILE_PATH || null,
+      input_bytes: env.CLAUDE_TOOL_INPUT ? Buffer.byteLength(env.CLAUDE_TOOL_INPUT, 'utf8') : 0,
+      stdout_bytes: env.CLAUDE_TOOL_STDOUT ? Buffer.byteLength(env.CLAUDE_TOOL_STDOUT, 'utf8') : 0,
+      stderr_bytes: env.CLAUDE_TOOL_STDERR ? Buffer.byteLength(env.CLAUDE_TOOL_STDERR, 'utf8') : 0
+    },
+    env_keys: envKeys
+  };
+
+  fs.appendFileSync(
+    path.join(debugDir, 'hook_env.jsonl'),
+    stableStringify(entry) + '\n',
+    'utf8'
+  );
 }
 
 function initSession() {
@@ -286,6 +323,7 @@ function recordEpisode() {
   const sessionDir = path.join(root, sessionId);
 
   ensureDir(sessionDir);
+  writeHookDebugSnapshot(root, sessionId, correlationId, config.eventType);
 
   // Build episode with MOVA 4.1.1 structure
   const episode = {
