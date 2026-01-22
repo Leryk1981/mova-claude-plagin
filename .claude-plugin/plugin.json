@@ -7,5 +7,8 @@
   },
   "repository": "https://github.com/Leryk1981/mova-claude-plagin",
   "license": "MIT",
+  "engines": {
+    "claude-code": ">=1.0.0"
+  },
   "keywords": ["monitoring", "observability", "validation", "guard", "hooks", "security"]
 }
