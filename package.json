@@ -1,6 +1,6 @@
 {
   "name": "mova-claude-plugin",
-  "version": "0.3.0",
+  "version": "0.3.2",
   "description": "MOVA - Monitoring, Observing, Validating Agent plugin for Claude Code",
   "main": "index.js",
   "types": "index.d.ts",

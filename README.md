@@ -1,6 +1,6 @@
 # MOVA Plugin for Claude Code
 
-[![Version](https://img.shields.io/badge/version-0.3.0-blue.svg)](package.json)
+[![Version](https://img.shields.io/badge/version-0.3.2-blue.svg)](package.json)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Node](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen.svg)](package.json)
 [![Claude Code](https://img.shields.io/badge/claude--code-%3E%3D1.0.0-purple.svg)](.claude-plugin/plugin.json)

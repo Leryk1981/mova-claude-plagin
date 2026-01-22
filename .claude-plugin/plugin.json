@@ -1,6 +1,6 @@
 {
   "name": "mova",
-  "version": "0.3.0",
+  "version": "0.3.2",
   "description": "MOVA - Monitoring, Observing, Validating Agent layer for Claude Code",
   "author": {
     "name": "Sergii Miasoiedov"
