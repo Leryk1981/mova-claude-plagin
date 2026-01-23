@@ -9,6 +9,7 @@ const MOVA_DIR = path.join(ROOT, ".mova");
 const TMP_DIR = path.join(MOVA_DIR, "tmp");
 const EVENTS_DIR = path.join(TMP_DIR, "opencode_events");
 const SESSION_FILE = path.join(MOVA_DIR, "session.json");
+const POLICY_FILE = path.join(MOVA_DIR, "policy_v0.json");
 const EPISODES_DIR = path.join(MOVA_DIR, "episodes");
 
 function nowIsoSafe() {
@@ -41,11 +42,32 @@ function eventLogPath(runId) {
   return path.join(EVENTS_DIR, `${runId}.jsonl`);
 }
 
-function countEvents(filePath) {
-  if (!fs.existsSync(filePath)) return 0;
+function readEventLines(filePath) {
+  if (!fs.existsSync(filePath)) return [];
   const raw = fs.readFileSync(filePath, "utf8").trim();
-  if (!raw) return 0;
-  return raw.split("\n").filter(Boolean).length;
+  if (!raw) return [];
+  return raw
+    .split("\n")
+    .filter(Boolean)
+    .map((line) => {
+      try {
+        return JSON.parse(line);
+      } catch {
+        return null;
+      }
+    })
+    .filter(Boolean);
+}
+
+function summarizeOutcomes(events) {
+  const counts = {};
+  let lastDecision = null;
+  for (const evt of events) {
+    const code = evt && evt.outcome_code ? String(evt.outcome_code) : "UNKNOWN";
+    counts[code] = (counts[code] || 0) + 1;
+    lastDecision = code;
+  }
+  return { counts, lastDecision };
 }
 
 function cmdStart() {
@@ -105,7 +127,9 @@ function cmdFinish() {
 
   const runId = session.run_id;
   const tmpEventsFile = eventLogPath(runId);
-  const eventsCount = countEvents(tmpEventsFile);
+  const events = readEventLines(tmpEventsFile);
+  const eventsCount = events.length;
+  const { counts, lastDecision } = summarizeOutcomes(events);
 
   const episodeDir = path.join(EPISODES_DIR, runId);
   ensureDir(episodeDir);
@@ -117,11 +141,16 @@ function cmdFinish() {
     fs.writeFileSync(episodeEvents, "", "utf8");
   }
 
+  if (fs.existsSync(POLICY_FILE)) {
+    fs.copyFileSync(POLICY_FILE, path.join(episodeDir, "policy_snapshot.json"));
+  }
+
   writeJson(path.join(episodeDir, "artifacts_index.json"), {
     run_id: runId,
     created_at: new Date().toISOString(),
     events_file: "events.jsonl",
-    events_count: eventsCount
+    events_count: eventsCount,
+    policy_snapshot: fs.existsSync(POLICY_FILE) ? "policy_snapshot.json" : null
   });
 
   writeJson(path.join(episodeDir, "summary.json"), {
@@ -130,7 +159,14 @@ function cmdFinish() {
     started_at: session.started_at,
     finished_at: session.finished_at,
     totals: { events: eventsCount },
-    refs: { events_file: rel(episodeEvents) }
+    outcomes: counts,
+    last_decision: lastDecision,
+    refs: {
+      events_file: rel(episodeEvents),
+      policy_snapshot: fs.existsSync(POLICY_FILE)
+        ? rel(path.join(episodeDir, "policy_snapshot.json"))
+        : null
+    }
   });
 
   console.log(
