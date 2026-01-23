@@ -108,46 +108,56 @@ export const movaPlugin: Plugin = async ({ client, directory, worktree, project,
         await runScript("scripts/mova-observe.js", eventFile);
       },
 
-      "tool.execute.before": async (toolCall: any) => {
-        const eventFile = writeEvent(movaTmp, "tool.execute.before", { toolCall });
+      "tool.execute.before": async (input: any, output: any) => {
+        const eventFile = writeEvent(movaTmp, "tool.execute.before", { input, output });
         log("debug", `tool.execute.before -> ${eventFile}`);
 
-        const toolName = String(
-          toolCall?.name ?? toolCall?.tool ?? toolCall?.id ?? ""
-        );
-        const toolArgs =
-          toolCall?.args ??
-          toolCall?.arguments ??
-          toolCall?.input ??
-          toolCall?.params ??
-          {};
-        await writeTraceEvent("tool.execute.before", { tool: toolName, args: toolArgs });
-        const cmd =
-          typeof toolArgs === "string"
-            ? toolArgs
-            : typeof toolArgs?.command === "string"
-              ? toolArgs.command
-              : "";
-        if (toolName === "bash" && cmd.includes("PROBE_BLOCK")) {
+        const rawPayload = { hook: "tool.execute.before", input, output };
+        await writeTraceEvent("tool.execute.before.raw", rawPayload);
+
+        let raw = "";
+        try {
+          raw = JSON.stringify(rawPayload);
+        } catch {
+          raw = String(rawPayload);
+        }
+
+        if (raw.includes("PROBE_BLOCK")) {
           await writeTraceEvent("tool.blocked", {
-            tool: "bash",
-            command: cmd,
-            reason: "probe_block"
+            reason: "probe_block",
+            raw_hint: "PROBE_BLOCK"
           });
           throw new Error("MOVA_BLOCK: tool execution denied by policy");
         }
+
+        const toolName = String(
+          input?.name ?? input?.tool ?? input?.id ?? output?.tool ?? output?.name ?? ""
+        );
+        const toolArgs =
+          input?.args ??
+          input?.arguments ??
+          input?.input ??
+          input?.params ??
+          output?.args ??
+          output?.arguments ??
+          output?.input ??
+          output?.params ??
+          {};
+        await writeTraceEvent("tool.execute.before", { tool: toolName, args: toolArgs });
         const payload: {
           tool_name: string;
           tool_args: unknown;
           cwd: string;
           file_path?: string;
         } = { tool_name: toolName, tool_args: toolArgs, cwd: repoDir };
-        if (typeof toolCall?.path === "string") {
-          payload.file_path = toolCall.path;
-        } else if (typeof toolCall?.file?.path === "string") {
-          payload.file_path = toolCall.file.path;
+        if (typeof input?.path === "string") {
+          payload.file_path = input.path;
+        } else if (typeof input?.file?.path === "string") {
+          payload.file_path = input.file.path;
         } else if (typeof toolArgs?.path === "string") {
           payload.file_path = toolArgs.path;
+        } else if (typeof output?.path === "string") {
+          payload.file_path = output.path;
         }
 
         const out = await runGuardWithInput(payload);
