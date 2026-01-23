@@ -1,4 +1,33 @@
 #!/usr/bin/env node
+
+
+/* --- OpenCode adapter guard decision protocol (v0) --- */
+function movaPrintDecision(decision, reason){
+  const d = String(decision||'ALLOW').toUpperCase();
+  const r = (reason==null? '' : String(reason));
+  // Stable machine-readable lines
+  process.stdout.write('MOVA_DECISION=' + d + '
+');
+  process.stdout.write('MOVA_REASON=' + r.replace(/
+/g,' ') + '
+');
+}
+// Deterministic override for probes
+const __force = process.env.MOVA_FORCE_DECISION;
+if(__force){
+  movaPrintDecision(__force, 'forced by MOVA_FORCE_DECISION');
+  process.exit(__force.toUpperCase()==='BLOCK' ? 2 : 0);
+}
+process.on('exit', (code)=>{
+  // If script exits without printing a decision, default to ALLOW
+  // (keeps legacy behavior intact)
+  // We detect printing by flag in global.
+});
+let __mova_decision_printed=false;
+const __origWrite = process.stdout.write.bind(process.stdout);
+process.stdout.write = (...args)=>{ if(String(args[0]||'').startsWith('MOVA_DECISION=')) __mova_decision_printed=true; return __origWrite(...args); };
+process.on('exit', ()=>{ if(!__mova_decision_printed) movaPrintDecision('ALLOW','default'); });
+/* --- end protocol --- */
 /* --- OpenCode adapter input (v0) --- */
 function readEventFileFromArgv(argv){
   const idx = argv.indexOf('--event-file');
