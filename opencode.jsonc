@@ -1,16 +1,17 @@
 {
-  "$schema": "https://opencode.ai/config.json",
+  "\": "https://opencode.ai/config.json",
+  "data": { "directory": ".opencode" },
   "default_agent": "mova_build",
   "agent": {
-    "mova_build": {
-      "mode": "primary",
-      "instructions": "You are a coding agent. You may use tools. Do not edit protected MOVA core files.",
-      "tools": { "bash": true, "write": true, "edit": true, "patch": true }
-    },
     "mova_plan": {
       "mode": "primary",
-      "instructions": "Planning only. Do not use tools unless explicitly asked.",
+      "instructions": "MOVA Plan. Planning only. Do not use tools.",
       "tools": { "bash": false, "write": false, "edit": false, "patch": false }
+    },
+    "mova_build": {
+      "mode": "primary",
+      "instructions": "MOVA Build. You may use tools. Do not edit protected MOVA core files.",
+      "tools": { "bash": true, "write": true, "edit": true, "patch": true }
     }
   }
 }
