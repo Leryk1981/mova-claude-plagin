@@ -33,27 +33,24 @@ export default function movaPlugin(ctx) {
   const root = ctx?.worktree || ctx?.directory || process.cwd();
 
   return {
-    hooks: {
-      "tool.execute.before": async (input, output) => {
-        const tool = String(input?.tool || "");
-        const args = output?.args;
-        const command = extractCommand(args);
-        const raw = safeStringify({ input, output });
-        const decision =
-          tool === "bash" && (command.includes("PROBE_BLOCK") || raw.includes("PROBE_BLOCK"))
-            ? "BLOCK"
-            : "ALLOW";
-        const cleanCmd = command.replace(/\s+/g, " ").slice(0, 500);
-        appendLog(
-          root,
-          `ts=${new Date().toISOString()} tool=${tool} command="${cleanCmd}" decision=${decision}`
-        );
+    "tool.execute.before": async (input, output) => {
+      const tool = String(input?.tool || "");
+      const args = output?.args;
+      const command = extractCommand(args);
+      const raw = safeStringify({ input, output });
+      const decision =
+        tool === "bash" && (command.includes("PROBE_BLOCK") || raw.includes("PROBE_BLOCK"))
+          ? "BLOCK"
+          : "ALLOW";
+      const cleanCmd = command.replace(/\s+/g, " ").slice(0, 500);
+      appendLog(
+        root,
+        `ts=${new Date().toISOString()} tool=${tool} command="${cleanCmd}" decision=${decision}`
+      );
 
-        if (decision === "BLOCK") {
-          throw new Error("MOVA_BLOCK: tool execution denied by policy");
-        }
+      if (decision === "BLOCK") {
+        throw new Error("MOVA_BLOCK: tool execution denied by policy");
       }
-    },
-    tools: []
+    }
   };
 }
