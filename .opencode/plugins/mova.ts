@@ -45,6 +45,29 @@ export const movaPlugin: Plugin = async ({ client, directory, worktree, project,
     };
   }
 
+  function truncateValue(value: unknown): unknown {
+    if (typeof value === "string") {
+      return value.length > 2000 ? value.slice(0, 2000) : value;
+    }
+    if (Array.isArray(value)) {
+      return value.map(truncateValue);
+    }
+    if (value && typeof value === "object") {
+      const out: Record<string, unknown> = {};
+      for (const [k, v] of Object.entries(value)) {
+        out[k] = truncateValue(v);
+      }
+      return out;
+    }
+    return value;
+  }
+
+  async function writeTraceEvent(kind: string, payload: unknown) {
+    const scriptPath = path.join(repoDir, "scripts/mova-event-write.js");
+    const payloadJson = JSON.stringify(truncateValue(payload));
+    await $`node ${scriptPath} --kind ${kind} --json ${payloadJson}`;
+  }
+
   async function runGuardWithInput(payload: {
     tool_name: string;
     tool_args: unknown;
@@ -65,6 +88,7 @@ export const movaPlugin: Plugin = async ({ client, directory, worktree, project,
     hooks: {
       "file.edited": async (file: any) => {
         const p = String(file?.path ?? '');
+        await writeTraceEvent("file.edited", { path: p });
         const protectedPrefixes = [
           'scripts/mova-guard.js',
           'scripts/mova-security.js',
@@ -75,7 +99,6 @@ export const movaPlugin: Plugin = async ({ client, directory, worktree, project,
         const isProtected = protectedPrefixes.some(x => p === x || (x.endsWith('/') && p.startsWith(x)));
         if (isProtected) {
           client.app.log('error', `[mova/opencode] EDIT DENIED: ${p}`);
-          throw new Error(`MOVA_EDIT_DENIED: ${p}`);
         }
       },
 
@@ -98,6 +121,7 @@ export const movaPlugin: Plugin = async ({ client, directory, worktree, project,
           toolCall?.input ??
           toolCall?.params ??
           {};
+        await writeTraceEvent("tool.execute.before", { tool: toolName, args: toolArgs });
         const payload: {
           tool_name: string;
           tool_args: unknown;
@@ -129,13 +153,16 @@ export const movaPlugin: Plugin = async ({ client, directory, worktree, project,
           });
           log('error', `BLOCK tool=${toolCall?.name ?? '?'} -> ${blockedEventFile}`);
           await runScript("scripts/mova-observe.js", blockedEventFile);
-          throw new Error('MOVA_BLOCK: tool execution denied by policy');
         }
       },
 
       "tool.execute.after": async (result: any) => {
         const eventFile = writeEvent(movaTmp, "tool.execute.after", { result });
         log("debug", `tool.execute.after -> ${eventFile}`);
+        const toolName = String(result?.tool ?? result?.name ?? result?.id ?? "");
+        const status = String(result?.status ?? result?.state?.status ?? "");
+        const ok = status === "completed";
+        await writeTraceEvent("tool.execute.after", { tool: toolName, status, ok });
         await runScript("scripts/mova-observe.js", eventFile);
       }
     },
