@@ -1,19 +1,29 @@
-function safeStringify(v: any) {
-  try { return JSON.stringify(v); } catch { return String(v); }
+function safeStringify(v) {
+  try { return JSON.stringify(v); } catch (e) { return String(v); }
 }
 
-export default function movaPlugin({ client }: any) {
-  client?.app?.log?.("info", "MOVA plugin loaded (throw-block v0)");
+export default function movaPlugin(ctx) {
+  var client = ctx && ctx.client;
+
+  if (client && client.app && typeof client.app.log === "function") {
+    client.app.log("info", "MOVA plugin loaded (ultra-compatible v0)");
+  }
 
   return {
     hooks: {
-      "tool.execute.before": async (payload: any) => {
-        const raw = safeStringify(payload);
-        // Log only a small prefix to avoid huge payload issues
-        client?.app?.log?.("debug", MOVA before: );
+      "tool.execute.before": async function (payload) {
+        var raw = safeStringify(payload);
+        // keep logs small
+        var head = raw.length > 800 ? raw.slice(0, 800) : raw;
 
-        if (raw.includes("PROBE_BLOCK")) {
-          client?.app?.log?.("error", "MOVA_BLOCK: probe_block matched; denying tool execution");
+        if (client && client.app && typeof client.app.log === "function") {
+          client.app.log("debug", "MOVA before: " + head);
+        }
+
+        if (raw.indexOf("PROBE_BLOCK") >= 0) {
+          if (client && client.app && typeof client.app.log === "function") {
+            client.app.log("error", "MOVA_BLOCK: probe_block matched; denying tool execution");
+          }
           throw new Error("MOVA_BLOCK: tool execution denied by policy");
         }
       }
