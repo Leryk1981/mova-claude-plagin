@@ -1,6 +1,5 @@
 {
-  "\": "https://opencode.ai/config.json",
-  "data": { "directory": ".opencode" },
+  "$schema": "https://opencode.ai/config.json",
   "default_agent": "mova_build",
   "agent": {
     "mova_plan": {
