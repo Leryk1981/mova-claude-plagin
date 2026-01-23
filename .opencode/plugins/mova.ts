@@ -100,6 +100,12 @@ export default function movaPlugin(ctx) {
         outcome_code: outcomeCode
       });
 
+      if (!active) {
+        const marker = path.join(movaDir, "tmp", "observe.marker");
+        ensureDir(path.dirname(marker));
+        fs.appendFileSync(marker, `WROTE_OBSERVE ${new Date().toISOString()}\n`, "utf8");
+      }
+
       maybeAppendLog(
         root,
         policy.debug.write_plugin_log,
