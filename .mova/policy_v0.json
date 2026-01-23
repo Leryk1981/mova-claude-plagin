@@ -1,0 +1,15 @@
+{
+  "policy_version": "v0",
+  "bash": {
+    "mode_outside_session": "observe_only",
+    "deny_contains": [
+      "PROBE_BLOCK"
+    ],
+    "allow_contains": [
+      "PROBE_ALLOW"
+    ]
+  },
+  "debug": {
+    "write_plugin_log": true
+  }
+}
