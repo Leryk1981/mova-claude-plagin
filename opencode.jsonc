@@ -1,0 +1,10 @@
+{
+  "\": "https://opencode.ai/config.json",
+  "data": { "directory": ".opencode" },
+  "agents": {
+    "coder": {
+      "model": "gpt-4.1-mini",
+      "instructions": "You are a coding agent. You may use tools. Do not edit protected MOVA core files."
+    }
+  }
+}
