@@ -90,9 +90,11 @@ export default function movaPlugin(ctx) {
 
       const eventsFile = active
         ? path.join(eventsDir, `${session.run_id}.jsonl`)
-        : path.join(eventsDir, "_probe.jsonl");
+        : path.join(movaDir, "tmp", "observe.jsonl");
       appendEventLine(eventsFile, {
         ts: new Date().toISOString(),
+        session_active: active,
+        run_id: active ? session.run_id : null,
         tool: "bash",
         command,
         outcome_code: outcomeCode

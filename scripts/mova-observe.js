@@ -33,6 +33,7 @@ const INLINE_SECRET_RE = /(sk-[a-zA-Z0-9]{8,})/g;
 const PLACEHOLDER_RE = /^\$\{[A-Z0-9_]+(?::-?[^}]+)?\}$/;
 
 const args = process.argv.slice(2);
+const isTail = args[0] === 'tail';
 const isInit = args.includes('--init');
 const isFinalize = args.includes('--finalize');
 
@@ -430,9 +431,24 @@ function recordEpisode() {
   }
 }
 
+function tailObserve() {
+  const lines = Number(readArg('--lines') || 50);
+  const filePath = path.join(PROJECT_DIR, '.mova', 'tmp', 'observe.jsonl');
+  if (!fs.existsSync(filePath)) {
+    process.stdout.write('no observe yet\n');
+    return;
+  }
+  const raw = fs.readFileSync(filePath, 'utf8');
+  const all = raw.split(/\r?\n/).filter(Boolean);
+  const tail = all.slice(-lines);
+  process.stdout.write(tail.join('\n') + (tail.length ? '\n' : ''));
+}
+
 function main() {
   try {
-    if (isInit) {
+    if (isTail) {
+      tailObserve();
+    } else if (isInit) {
       initSession();
     } else if (isFinalize) {
       finalizeSession();
