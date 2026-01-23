@@ -1,4 +1,19 @@
 #!/usr/bin/env node
+/* --- OpenCode adapter input (v0) --- */
+function readEventFileFromArgv(argv){
+  const idx = argv.indexOf('--event-file');
+  if (idx >= 0 && argv[idx+1]) return argv[idx+1];
+  return null;
+}
+function readEventFile(filePath){
+  try{
+    const raw = require('node:fs').readFileSync(filePath,'utf8');
+    return JSON.parse(raw);
+  }catch(e){
+    return null;
+  }
+}
+/* --- end OpenCode adapter input --- */
 /**
  * MOVA Observe - Event collection and episode recording
  * Adapted for plugin architecture with MOVA 4.1.1 episode structure
@@ -433,3 +448,4 @@ function main() {
 }
 
 main();
+
