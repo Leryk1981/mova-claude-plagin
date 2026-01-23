@@ -61,5 +61,8 @@
   "homepage": "https://github.com/Leryk1981/mova-claude-plagin#readme",
   "publishConfig": {
     "access": "public"
+  },
+  "scripts": {
+    "test": "node -e \"console.log(\\\"SKIP: no validate script\\\")\""
   }
 }

@@ -10,5 +10,49 @@
   "engines": {
     "claude-code": ">=1.0.0"
   },
-  "keywords": ["monitoring", "observability", "validation", "guard", "hooks", "security"]
+  "keywords": ["monitoring", "observability", "validation", "guard", "hooks", "security"],
+  "commands": {
+    "init": {
+      "file": "commands/init.md"
+    },
+    "start": {
+      "file": "commands/start.md"
+    },
+    "status": {
+      "file": "commands/status.md"
+    },
+    "debug": {
+      "file": "commands/debug.md"
+    },
+    "dashboard": {
+      "file": "commands/dashboard.md"
+    },
+    "context": {
+      "file": "commands/context.md"
+    },
+    "export": {
+      "file": "commands/export.md"
+    },
+    "finish": {
+      "file": "commands/finish.md"
+    },
+    "lint": {
+      "file": "commands/lint.md"
+    },
+    "metrics": {
+      "file": "commands/metrics.md"
+    },
+    "retention": {
+      "file": "commands/retention.md"
+    },
+    "preset:list": {
+      "file": "commands/preset/list.md"
+    },
+    "preset:info": {
+      "file": "commands/preset/info.md"
+    },
+    "preset:apply": {
+      "file": "commands/preset/apply.md"
+    }
+  }
 }
