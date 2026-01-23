@@ -1,10 +1,7 @@
 ---
-description: MOVA probe (expected BLOCK)
-agent: coder
+description: MOVA probe (expected BLOCK) - must trigger bash tool and be denied by MOVA
+agent: mova_build
 ---
-This is an EXPECTED BLOCK probe. Do NOT edit any files.
-Attempt a harmless shell command so the runtime triggers tool.execute.before.
-
-Run exactly:
-- Use the built-in bash tool to run: echo PROBE_BLOCK
-
+Use the built-in bash tool to run:
+echo PROBE_BLOCK
+Do not edit any files.

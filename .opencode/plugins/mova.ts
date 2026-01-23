@@ -45,6 +45,22 @@ export const movaPlugin: Plugin = async ({ client, directory, worktree, project,
     };
   }
 
+  async function runGuardWithInput(payload: {
+    tool_name: string;
+    tool_args: unknown;
+    cwd: string;
+    file_path?: string;
+  }) {
+    const scriptPath = path.join(repoDir, "scripts/mova-guard.js");
+    const payloadJson = JSON.stringify(payload);
+    const res = await $`node ${scriptPath} --input-json ${payloadJson}`;
+    return {
+      code: res.exitCode ?? 0,
+      stdout: String(res.stdout ?? ""),
+      stderr: String(res.stderr ?? "")
+    };
+  }
+
   return {
     hooks: {
       "file.edited": async (file: any) => {
@@ -73,7 +89,30 @@ export const movaPlugin: Plugin = async ({ client, directory, worktree, project,
         const eventFile = writeEvent(movaTmp, "tool.execute.before", { toolCall });
         log("debug", `tool.execute.before -> ${eventFile}`);
 
-        const out = await runScript("scripts/mova-guard.js", eventFile);
+        const toolName = String(
+          toolCall?.name ?? toolCall?.tool ?? toolCall?.id ?? ""
+        );
+        const toolArgs =
+          toolCall?.args ??
+          toolCall?.arguments ??
+          toolCall?.input ??
+          toolCall?.params ??
+          {};
+        const payload: {
+          tool_name: string;
+          tool_args: unknown;
+          cwd: string;
+          file_path?: string;
+        } = { tool_name: toolName, tool_args: toolArgs, cwd: repoDir };
+        if (typeof toolCall?.path === "string") {
+          payload.file_path = toolCall.path;
+        } else if (typeof toolCall?.file?.path === "string") {
+          payload.file_path = toolCall.file.path;
+        } else if (typeof toolArgs?.path === "string") {
+          payload.file_path = toolArgs.path;
+        }
+
+        const out = await runGuardWithInput(payload);
 
         // Protocol v0: parse explicit decision line
         const m = out.stdout.match(/^MOVA_DECISION=(ALLOW|BLOCK|WARN)\s*$/m);

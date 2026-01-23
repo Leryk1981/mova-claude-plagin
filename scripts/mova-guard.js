@@ -62,6 +62,38 @@ const SECURITY_EVENTS_PATH = path.join(PLUGIN_ROOT, 'config', 'security-events.j
 const args = new Set(process.argv.slice(2));
 const taskIndex = process.argv.indexOf('--task');
 const task = taskIndex >= 0 ? process.argv[taskIndex + 1] : undefined;
+const inputJsonIndex = process.argv.indexOf('--input-json');
+let inputJson = null;
+if (inputJsonIndex >= 0 && process.argv[inputJsonIndex + 1]) {
+  try {
+    inputJson = JSON.parse(process.argv[inputJsonIndex + 1]);
+  } catch {}
+}
+
+function getToolName() {
+  return inputJson?.tool_name ? String(inputJson.tool_name) : (process.env.CLAUDE_TOOL_NAME || '');
+}
+
+function getToolInputRaw() {
+  if (inputJson && Object.prototype.hasOwnProperty.call(inputJson, 'tool_args')) {
+    return inputJson.tool_args;
+  }
+  return process.env.CLAUDE_TOOL_INPUT || '';
+}
+
+function getToolInputString() {
+  const input = getToolInputRaw();
+  if (typeof input === 'string') return input;
+  try {
+    return JSON.stringify(input);
+  } catch {
+    return String(input);
+  }
+}
+
+function getToolFilePath() {
+  return inputJson?.file_path ? String(inputJson.file_path) : (process.env.CLAUDE_TOOL_INPUT_FILE_PATH || '');
+}
 
 // Severity levels with priorities
 const SEVERITY_PRIORITY = {
@@ -114,9 +146,9 @@ function checkHumanInTheLoop() {
   if (!config?.human_in_the_loop) return;
 
   const hitl = config.human_in_the_loop;
-  const toolName = process.env.CLAUDE_TOOL_NAME || '';
-  const input = process.env.CLAUDE_TOOL_INPUT || '';
-  const filePath = process.env.CLAUDE_TOOL_INPUT_FILE_PATH || '';
+  const toolName = getToolName();
+  const input = getToolInputString();
+  const filePath = getToolFilePath();
 
   // Check if tool is auto-approved
   if (hitl.auto_approve && Array.isArray(hitl.auto_approve)) {
@@ -186,8 +218,8 @@ function checkHumanInTheLoop() {
 
 // Human-in-the-Loop: Check if operation is destructive
 function isDestructiveOperation() {
-  const toolName = process.env.CLAUDE_TOOL_NAME || '';
-  const input = process.env.CLAUDE_TOOL_INPUT || '';
+  const toolName = getToolName();
+  const input = getToolInputString();
 
   const destructivePatterns = [
     { tool: 'Bash', patterns: [/\brm\b/, /\bmv\b/, /\bchmod\b/, /\bchown\b/, /\bkill\b/] },
@@ -290,7 +322,7 @@ function guardMainBranch() {
 }
 
 function guardDangerousBash() {
-  const input = process.env.CLAUDE_TOOL_INPUT || '';
+  const input = getToolInputString();
   const config = loadControlConfig();
 
   // Default dangerous patterns with severity
@@ -347,9 +379,9 @@ function evaluateGuardrailRules() {
   const config = loadControlConfig();
   if (!config?.guardrail_rules) return;
 
-  const toolName = process.env.CLAUDE_TOOL_NAME || '';
-  const input = process.env.CLAUDE_TOOL_INPUT || '';
-  const filePath = process.env.CLAUDE_TOOL_INPUT_FILE_PATH || '';
+  const toolName = getToolName();
+  const input = getToolInputString();
+  const filePath = getToolFilePath();
 
   // Collect all violations and sort by severity
   const violations = [];
@@ -434,7 +466,7 @@ function evaluateGuardrailRules() {
 }
 
 function postFormat() {
-  const file = process.env.CLAUDE_TOOL_INPUT_FILE_PATH || '';
+  const file = getToolFilePath();
   if (!/\.(js|jsx|ts|tsx|json|md|css|scss)$/i.test(file)) return;
 
   // Check if prettier exists
@@ -449,7 +481,7 @@ function postFormat() {
 }
 
 function postTest() {
-  const file = process.env.CLAUDE_TOOL_INPUT_FILE_PATH || '';
+  const file = getToolFilePath();
   if (!/\.(test|spec)\.(js|jsx|ts|tsx)$/i.test(file)) return;
 
   const config = loadControlConfig();
@@ -476,7 +508,7 @@ function evaluateEscalation() {
   if (!config?.human_in_the_loop) return;
 
   const hitl = config.human_in_the_loop;
-  const toolName = process.env.CLAUDE_TOOL_NAME || '';
+  const toolName = getToolName();
 
   // Check if this is a destructive operation
   if (isDestructiveOperation()) {
@@ -511,6 +543,29 @@ function emitInlineStatus(phase, status, details = '') {
 }
 
 function main() {
+  if (inputJson) {
+    const toolName = getToolName().toLowerCase();
+    const toolArgs = inputJson.tool_args || {};
+    if (toolName === 'bash') {
+      let cmd = '';
+      if (typeof toolArgs === 'string') {
+        cmd = toolArgs;
+      } else if (toolArgs && typeof toolArgs.command === 'string') {
+        cmd = toolArgs.command;
+      } else if (toolArgs && typeof toolArgs.cmd === 'string') {
+        cmd = toolArgs.cmd;
+      }
+      if (cmd.includes('PROBE_BLOCK')) {
+        movaPrintDecision('BLOCK', 'probe: PROBE_BLOCK');
+        process.exit(2);
+      }
+      if (cmd.includes('PROBE_ALLOW')) {
+        movaPrintDecision('ALLOW', 'probe: PROBE_ALLOW');
+        process.exit(0);
+      }
+    }
+  }
+
   switch (task) {
     case 'pre-main':
       guardMainBranch();
