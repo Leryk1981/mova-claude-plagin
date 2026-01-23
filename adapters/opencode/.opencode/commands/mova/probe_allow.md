@@ -1,3 +1,3 @@
-# MOVA: probe allow (OpenCode)
+# MOVA Probe Allow (guarded)
 
-RUN node -e "console.log('probe_allow: OK')"
+RUN node scripts/mova-guarded-run.js allow echo PROBE_ALLOW
