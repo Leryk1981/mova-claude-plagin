@@ -68,12 +68,7 @@ export const movaPlugin: Plugin = async ({ client, directory, worktree, project,
     await $`node ${scriptPath} --kind ${kind} --json ${payloadJson}`;
   }
 
-  async function runGuardWithInput(payload: {
-    tool_name: string;
-    tool_args: unknown;
-    cwd: string;
-    file_path?: string;
-  }) {
+  async function runGuardWithInput(payload: { input: unknown; output: unknown }) {
     const scriptPath = path.join(repoDir, "scripts/mova-guard.js");
     const payloadJson = JSON.stringify(payload);
     const res = await $`node ${scriptPath} --input-json ${payloadJson}`;
@@ -115,21 +110,6 @@ export const movaPlugin: Plugin = async ({ client, directory, worktree, project,
         const rawPayload = { hook: "tool.execute.before", input, output };
         await writeTraceEvent("tool.execute.before.raw", rawPayload);
 
-        let raw = "";
-        try {
-          raw = JSON.stringify(rawPayload);
-        } catch {
-          raw = String(rawPayload);
-        }
-
-        if (raw.includes("PROBE_BLOCK")) {
-          await writeTraceEvent("tool.blocked", {
-            reason: "probe_block",
-            raw_hint: "PROBE_BLOCK"
-          });
-          throw new Error("MOVA_BLOCK: tool execution denied by policy");
-        }
-
         const toolName = String(
           input?.name ?? input?.tool ?? input?.id ?? output?.tool ?? output?.name ?? ""
         );
@@ -144,39 +124,25 @@ export const movaPlugin: Plugin = async ({ client, directory, worktree, project,
           output?.params ??
           {};
         await writeTraceEvent("tool.execute.before", { tool: toolName, args: toolArgs });
-        const payload: {
-          tool_name: string;
-          tool_args: unknown;
-          cwd: string;
-          file_path?: string;
-        } = { tool_name: toolName, tool_args: toolArgs, cwd: repoDir };
-        if (typeof input?.path === "string") {
-          payload.file_path = input.path;
-        } else if (typeof input?.file?.path === "string") {
-          payload.file_path = input.file.path;
-        } else if (typeof toolArgs?.path === "string") {
-          payload.file_path = toolArgs.path;
-        } else if (typeof output?.path === "string") {
-          payload.file_path = output.path;
-        }
 
-        const out = await runGuardWithInput(payload);
+        const guardOut = await runGuardWithInput({ input, output });
+        let decision = "ALLOW";
+        let reason = "unknown";
+        let ruleId = "unknown";
+        try {
+          const parsed = JSON.parse(guardOut.stdout);
+          decision = String(parsed.decision || "ALLOW").toUpperCase();
+          reason = String(parsed.reason || "unknown");
+          ruleId = String(parsed.rule_id || "unknown");
+        } catch {}
 
-        // Protocol v0: parse explicit decision line
-        const m = out.stdout.match(/^MOVA_DECISION=(ALLOW|BLOCK|WARN)\s*$/m);
-        const decision = (m ? m[1] : 'ALLOW');
-        const reasonMatch = out.stdout.match(/^MOVA_REASON=(.*)$/m);
-        const reason = reasonMatch ? reasonMatch[1].trim() : "";
-        if (decision === 'BLOCK') {
-          const blockedEventFile = writeEvent(movaTmp, "tool.blocked", {
-            toolCall,
+        if (decision === "BLOCK") {
+          await writeTraceEvent("tool.blocked", {
             decision,
             reason,
-            stdout: out.stdout,
-            stderr: out.stderr
+            rule_id: ruleId
           });
-          log('error', `BLOCK tool=${toolCall?.name ?? '?'} -> ${blockedEventFile}`);
-          await runScript("scripts/mova-observe.js", blockedEventFile);
+          throw new Error("MOVA_BLOCK: tool execution denied by policy");
         }
       },
 
