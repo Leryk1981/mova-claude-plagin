@@ -3,13 +3,13 @@
 
 const fs = require("fs");
 const path = require("path");
-const crypto = require("crypto");
 
 const ROOT = process.cwd();
-const TMP_DIR = path.join(ROOT, ".mova", "tmp");
+const MOVA_DIR = path.join(ROOT, ".mova");
+const TMP_DIR = path.join(MOVA_DIR, "tmp");
 const EVENTS_DIR = path.join(TMP_DIR, "opencode_events");
-const SESSION_FILE = path.join(TMP_DIR, "opencode_session.json");
-const EPISODES_DIR = path.join(ROOT, ".mova", "episodes");
+const SESSION_FILE = path.join(MOVA_DIR, "session.json");
+const EPISODES_DIR = path.join(MOVA_DIR, "episodes");
 
 function nowIsoSafe() {
   return new Date().toISOString().replace(/[:.]/g, "-");
@@ -21,7 +21,11 @@ function ensureDir(p) {
 
 function readJson(p) {
   if (!fs.existsSync(p)) return null;
-  return JSON.parse(fs.readFileSync(p, "utf8"));
+  try {
+    return JSON.parse(fs.readFileSync(p, "utf8"));
+  } catch {
+    return null;
+  }
 }
 
 function writeJson(p, obj) {
@@ -29,35 +33,34 @@ function writeJson(p, obj) {
   fs.writeFileSync(p, JSON.stringify(obj, null, 2) + "\n", "utf8");
 }
 
-function listFilesRecursive(dir) {
-  if (!fs.existsSync(dir)) return [];
-  const out = [];
-  const stack = [dir];
-  while (stack.length) {
-    const d = stack.pop();
-    for (const ent of fs.readdirSync(d, { withFileTypes: true })) {
-      const full = path.join(d, ent.name);
-      if (ent.isDirectory()) stack.push(full);
-      else out.push(full);
-    }
-  }
-  return out;
-}
-
 function rel(p) {
   return path.relative(ROOT, p).replace(/\\/g, "/");
 }
 
-function writeEvent(runId, kind, payload) {
-  const dir = path.join(EVENTS_DIR, runId, kind);
-  ensureDir(dir);
-  const id = crypto.randomBytes(8).toString("hex");
-  const file = path.join(dir, `${nowIsoSafe()}_${id}.json`);
-  writeJson(file, { kind, ts: new Date().toISOString(), run_id: runId, payload });
-  return file;
+function eventLogPath(runId) {
+  return path.join(EVENTS_DIR, `${runId}.jsonl`);
+}
+
+function countEvents(filePath) {
+  if (!fs.existsSync(filePath)) return 0;
+  const raw = fs.readFileSync(filePath, "utf8").trim();
+  if (!raw) return 0;
+  return raw.split("\n").filter(Boolean).length;
 }
 
 function cmdStart() {
+  const existing = readJson(SESSION_FILE);
+  if (existing && existing.active && existing.run_id) {
+    console.log(
+      JSON.stringify(
+        { ok: true, run_id: existing.run_id, session_file: rel(SESSION_FILE) },
+        null,
+        2
+      )
+    );
+    return;
+  }
+
   ensureDir(TMP_DIR);
   ensureDir(EVENTS_DIR);
   const runId = nowIsoSafe();
@@ -68,31 +71,29 @@ function cmdStart() {
     finished_at: null
   };
   writeJson(SESSION_FILE, session);
-  writeEvent(runId, "session.started", { cwd: ROOT });
-  console.log(JSON.stringify({ ok: true, run_id: runId }, null, 2));
+  ensureDir(path.dirname(eventLogPath(runId)));
+  fs.writeFileSync(eventLogPath(runId), "", "utf8");
+  console.log(JSON.stringify({ ok: true, run_id: runId, session_file: rel(SESSION_FILE) }, null, 2));
 }
 
 function cmdStatus() {
   const session = readJson(SESSION_FILE);
-  if (!session || !session.active) {
+  if (!session || !session.active || !session.run_id) {
     console.log(JSON.stringify({ ok: true, active: false }, null, 2));
     return;
   }
-  const base = path.join(EVENTS_DIR, session.run_id);
-  const files = listFilesRecursive(base);
-  console.log(JSON.stringify({
-    ok: true,
-    active: true,
-    run_id: session.run_id,
-    started_at: session.started_at,
-    events_dir: rel(base),
-    events_count: files.length
-  }, null, 2));
+  console.log(
+    JSON.stringify(
+      { ok: true, active: true, run_id: session.run_id, session_file: rel(SESSION_FILE) },
+      null,
+      2
+    )
+  );
 }
 
 function cmdFinish() {
   const session = readJson(SESSION_FILE);
-  if (!session || !session.active) {
+  if (!session || !session.active || !session.run_id) {
     console.log(JSON.stringify({ ok: false, error: "No active session" }, null, 2));
     process.exitCode = 2;
     return;
@@ -103,19 +104,24 @@ function cmdFinish() {
   writeJson(SESSION_FILE, session);
 
   const runId = session.run_id;
-  writeEvent(runId, "session.finished", { cwd: ROOT });
-
-  const runEventsDir = path.join(EVENTS_DIR, runId);
-  const eventFilesAbs = listFilesRecursive(runEventsDir).sort();
-  const eventFilesRel = eventFilesAbs.map(rel);
+  const tmpEventsFile = eventLogPath(runId);
+  const eventsCount = countEvents(tmpEventsFile);
 
   const episodeDir = path.join(EPISODES_DIR, runId);
   ensureDir(episodeDir);
 
+  const episodeEvents = path.join(episodeDir, "events.jsonl");
+  if (fs.existsSync(tmpEventsFile)) {
+    fs.copyFileSync(tmpEventsFile, episodeEvents);
+  } else {
+    fs.writeFileSync(episodeEvents, "", "utf8");
+  }
+
   writeJson(path.join(episodeDir, "artifacts_index.json"), {
     run_id: runId,
     created_at: new Date().toISOString(),
-    events: eventFilesRel
+    events_file: "events.jsonl",
+    events_count: eventsCount
   });
 
   writeJson(path.join(episodeDir, "summary.json"), {
@@ -123,16 +129,22 @@ function cmdFinish() {
     run_id: runId,
     started_at: session.started_at,
     finished_at: session.finished_at,
-    totals: {
-      events: eventFilesRel.length
-    },
-    refs: {
-      events_dir: rel(runEventsDir),
-      artifacts_index: rel(path.join(episodeDir, "artifacts_index.json"))
-    }
+    totals: { events: eventsCount },
+    refs: { events_file: rel(episodeEvents) }
   });
 
-  console.log(JSON.stringify({ ok: true, run_id: runId, episode_dir: rel(episodeDir) }, null, 2));
+  console.log(
+    JSON.stringify(
+      {
+        ok: true,
+        run_id: runId,
+        episode_dir: rel(episodeDir),
+        events_count: eventsCount
+      },
+      null,
+      2
+    )
+  );
 }
 
 function main() {

@@ -5,11 +5,12 @@ function ensureDir(p) {
   fs.mkdirSync(p, { recursive: true });
 }
 
-function safeStringify(v) {
+function readSession(sessionFile) {
+  if (!fs.existsSync(sessionFile)) return null;
   try {
-    return JSON.stringify(v);
+    return JSON.parse(fs.readFileSync(sessionFile, "utf8"));
   } catch {
-    return String(v);
+    return null;
   }
 }
 
@@ -23,30 +24,37 @@ function extractCommand(args) {
   return "";
 }
 
-function appendLog(root, line) {
-  const dir = path.join(root, ".mova", "tmp");
-  ensureDir(dir);
-  fs.appendFileSync(path.join(dir, "opencode_plugin_debug.log"), line + "\n", "utf8");
+function appendEventLine(eventsFile, event) {
+  ensureDir(path.dirname(eventsFile));
+  fs.appendFileSync(eventsFile, JSON.stringify(event) + "\n", "utf8");
 }
 
 export default function movaPlugin(ctx) {
   const root = ctx?.worktree || ctx?.directory || process.cwd();
+  const sessionFile = path.join(root, ".mova", "session.json");
+  const eventsDir = path.join(root, ".mova", "tmp", "opencode_events");
 
   return {
     "tool.execute.before": async (input, output) => {
       const tool = String(input?.tool || "");
+      if (tool !== "bash") return;
+
       const args = output?.args;
       const command = extractCommand(args);
-      const raw = safeStringify({ input, output });
+      const session = readSession(sessionFile);
+      const active = Boolean(session && session.active && session.run_id);
       const decision =
-        tool === "bash" && (command.includes("PROBE_BLOCK") || raw.includes("PROBE_BLOCK"))
-          ? "BLOCK"
-          : "ALLOW";
-      const cleanCmd = command.replace(/\s+/g, " ").slice(0, 500);
-      appendLog(
-        root,
-        `ts=${new Date().toISOString()} tool=${tool} command="${cleanCmd}" decision=${decision}`
-      );
+        active && command.includes("PROBE_BLOCK") ? "BLOCK" : "ALLOW";
+
+      if (active) {
+        const eventsFile = path.join(eventsDir, `${session.run_id}.jsonl`);
+        appendEventLine(eventsFile, {
+          ts: new Date().toISOString(),
+          tool: "bash",
+          command,
+          decision
+        });
+      }
 
       if (decision === "BLOCK") {
         throw new Error("MOVA_BLOCK: tool execution denied by policy");
