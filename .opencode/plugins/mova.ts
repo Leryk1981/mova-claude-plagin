@@ -122,6 +122,20 @@ export const movaPlugin: Plugin = async ({ client, directory, worktree, project,
           toolCall?.params ??
           {};
         await writeTraceEvent("tool.execute.before", { tool: toolName, args: toolArgs });
+        const cmd =
+          typeof toolArgs === "string"
+            ? toolArgs
+            : typeof toolArgs?.command === "string"
+              ? toolArgs.command
+              : "";
+        if (toolName === "bash" && cmd.includes("PROBE_BLOCK")) {
+          await writeTraceEvent("tool.blocked", {
+            tool: "bash",
+            command: cmd,
+            reason: "probe_block"
+          });
+          throw new Error("MOVA_BLOCK: tool execution denied by policy");
+        }
         const payload: {
           tool_name: string;
           tool_args: unknown;
