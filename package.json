@@ -63,6 +63,6 @@
     "access": "public"
   },
   "scripts": {
-    "test": "node -e \"console.log(\\\"SKIP: no validate script\\\")\""
+    "test": "node -e \"console.log(\\\"SKIP: no validate script\\\")\" && node scripts/mova-guard.smoke.js"
   }
 }
