@@ -75,16 +75,12 @@ export const movaPlugin: Plugin = async ({ client, directory, worktree, project,
 
         const out = await runScript("scripts/mova-guard.js", eventFile);
 
-        // Protocol v0: guard blocks if stdout contains "MOVA_BLOCK"
-        
+        // Protocol v0: parse explicit decision line
         const m = out.stdout.match(/^MOVA_DECISION=(ALLOW|BLOCK|WARN)\s*$/m);
         const decision = (m ? m[1] : 'ALLOW');
         if (decision === 'BLOCK') {
           log('error', `BLOCK tool=${toolCall?.name ?? '?'}`);
           throw new Error('MOVA_BLOCK: tool execution denied by policy');
-        }
-      `);
-          throw new Error("MOVA_BLOCK: tool execution denied by policy");
         }
       },
 
