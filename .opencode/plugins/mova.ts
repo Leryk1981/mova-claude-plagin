@@ -31,7 +31,9 @@ export const movaPlugin: Plugin = async ({ client, directory, worktree, project,
     client.app.log(level, `[mova/opencode] ${msg}`);
 
   const repoDir = worktree || directory || process.cwd();
+  const projectRoot = worktree || directory || process.cwd();
   const movaTmp = path.join(repoDir, ".mova", "tmp");
+  const debugLog = path.join(projectRoot, ".mova", "tmp", "opencode_plugin_debug.log");
 
   async function runScript(scriptRel: string, eventFile: string) {
     // Convention: scripts accept --event-file <path>
@@ -109,6 +111,25 @@ export const movaPlugin: Plugin = async ({ client, directory, worktree, project,
 
         const rawPayload = { hook: "tool.execute.before", input, output };
         await writeTraceEvent("tool.execute.before.raw", rawPayload);
+
+        try {
+          const raw = JSON.stringify(rawPayload);
+          const toolName = String(
+            input?.name ?? input?.tool ?? input?.id ?? output?.tool ?? output?.name ?? ""
+          );
+          const snapshot = raw.length > 2000 ? raw.slice(0, 2000) : raw;
+          const line = `${new Date().toISOString()} tool=${toolName} root=${projectRoot} raw=${snapshot}\n`;
+          fs.mkdirSync(path.dirname(debugLog), { recursive: true });
+          fs.appendFileSync(debugLog, line, "utf8");
+          if (raw.includes("PROBE_BLOCK")) {
+            fs.appendFileSync(debugLog, `${new Date().toISOString()} BLOCK HIT\n`, "utf8");
+            throw new Error("MOVA_BLOCK: tool execution denied by policy");
+          }
+        } catch (err) {
+          if (err instanceof Error && err.message.startsWith("MOVA_BLOCK:")) {
+            throw err;
+          }
+        }
 
         const toolName = String(
           input?.name ?? input?.tool ?? input?.id ?? output?.tool ?? output?.name ?? ""
