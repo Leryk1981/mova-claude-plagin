@@ -47,6 +47,22 @@ export const movaPlugin: Plugin = async ({ client, directory, worktree, project,
 
   return {
     hooks: {
+      "file.edited": async (file: any) => {
+        const p = String(file?.path ?? '');
+        const protectedPrefixes = [
+          'scripts/mova-guard.js',
+          'scripts/mova-security.js',
+          'scripts/mova-observe.js',
+          'mova/control_v0.json',
+          'presets/'
+        ];
+        const isProtected = protectedPrefixes.some(x => p === x || (x.endsWith('/') && p.startsWith(x)));
+        if (isProtected) {
+          client.app.log('error', `[mova/opencode] EDIT DENIED: ${p}`);
+          throw new Error(`MOVA_EDIT_DENIED: ${p}`);
+        }
+      },
+
       "session.created": async (session: any) => {
         const eventFile = writeEvent(movaTmp, "session.created", { session, directory, worktree, project });
         log("info", `session.created -> ${eventFile}`);
