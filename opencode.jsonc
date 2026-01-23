@@ -5,12 +5,22 @@
     "mova_plan": {
       "mode": "primary",
       "instructions": "MOVA Plan. Planning only. Do not use tools.",
-      "tools": { "bash": false, "write": false, "edit": false, "patch": false }
+      "tools": {
+        "bash": true,
+        "write": false,
+        "edit": false,
+        "patch": false
+      }
     },
     "mova_build": {
       "mode": "primary",
       "instructions": "MOVA Build. You may use tools. Do not edit protected MOVA core files.",
-      "tools": { "bash": true, "write": true, "edit": true, "patch": true }
+      "tools": {
+        "bash": true,
+        "write": true,
+        "edit": true,
+        "patch": true
+      }
     }
   }
 }
