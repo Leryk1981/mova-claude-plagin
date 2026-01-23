@@ -22,5 +22,8 @@
         "patch": true
       }
     }
-  }
+  },
+  "plugins": [
+    "./.opencode/plugins/mova.ts"
+  ]
 }
