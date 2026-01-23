@@ -2,3 +2,7 @@
 mova/
 mova-episodes-export.jsonl
 local-notes/
+# --- MOVA OpenCode adapter allowlist (must be tracked) ---
+!adapters/
+!adapters/opencode/
+!adapters/opencode/**
