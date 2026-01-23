@@ -34,6 +34,7 @@ function loadPolicy(policyFile) {
     policy_version: "v0",
     bash: {
       mode_outside_session: "observe_only",
+      default_inside_session: "allow",
       deny_contains: [],
       allow_contains: []
     },
@@ -45,6 +46,7 @@ function loadPolicy(policyFile) {
     policy_version: policy.policy_version || "v0",
     bash: {
       mode_outside_session: policy?.bash?.mode_outside_session || "observe_only",
+      default_inside_session: policy?.bash?.default_inside_session || "allow",
       deny_contains: Array.isArray(policy?.bash?.deny_contains) ? policy.bash.deny_contains : [],
       allow_contains: Array.isArray(policy?.bash?.allow_contains) ? policy.bash.allow_contains : []
     },
@@ -86,6 +88,18 @@ export default function movaPlugin(ctx) {
         outcomeCode = "NO_SESSION_OBSERVE_ONLY";
       } else if (matchesAny(command, policy.bash.deny_contains)) {
         outcomeCode = "BLOCKED_BY_POLICY";
+      } else {
+        const allowList = policy.bash.allow_contains;
+        const defaultMode = policy.bash.default_inside_session;
+        if (allowList.length > 0) {
+          if (matchesAny(command, allowList)) {
+            outcomeCode = "ALLOW";
+          } else if (defaultMode === "block") {
+            outcomeCode = "BLOCKED_BY_POLICY";
+          }
+        } else if (defaultMode === "block") {
+          outcomeCode = "BLOCKED_BY_POLICY";
+        }
       }
 
       const eventsFile = active

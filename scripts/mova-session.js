@@ -11,6 +11,7 @@ const EVENTS_DIR = path.join(TMP_DIR, "opencode_events");
 const SESSION_FILE = path.join(MOVA_DIR, "session.json");
 const POLICY_FILE = path.join(MOVA_DIR, "policy_v0.json");
 const EPISODES_DIR = path.join(MOVA_DIR, "episodes");
+const OBSERVE_FILE = path.join(MOVA_DIR, "tmp", "observe.jsonl");
 
 function nowIsoSafe() {
   return new Date().toISOString().replace(/[:.]/g, "-");
@@ -62,12 +63,16 @@ function readEventLines(filePath) {
 function summarizeOutcomes(events) {
   const counts = {};
   let lastDecision = null;
+  let lastTs = null;
   for (const evt of events) {
     const code = evt && evt.outcome_code ? String(evt.outcome_code) : "UNKNOWN";
     counts[code] = (counts[code] || 0) + 1;
     lastDecision = code;
+    if (evt && typeof evt.ts === "string") {
+      if (!lastTs || evt.ts > lastTs) lastTs = evt.ts;
+    }
   }
-  return { counts, lastDecision };
+  return { counts, lastDecision, lastTs };
 }
 
 function cmdStart() {
@@ -127,9 +132,11 @@ function cmdFinish() {
 
   const runId = session.run_id;
   const tmpEventsFile = eventLogPath(runId);
-  const events = readEventLines(tmpEventsFile);
-  const eventsCount = events.length;
-  const { counts, lastDecision } = summarizeOutcomes(events);
+  const sessionEvents = readEventLines(tmpEventsFile);
+  const observeEvents = readEventLines(OBSERVE_FILE);
+  const combinedEvents = sessionEvents.concat(observeEvents);
+  const eventsCount = sessionEvents.length;
+  const { counts, lastDecision, lastTs } = summarizeOutcomes(combinedEvents);
 
   const episodeDir = path.join(EPISODES_DIR, runId);
   ensureDir(episodeDir);
@@ -156,17 +163,13 @@ function cmdFinish() {
   writeJson(path.join(episodeDir, "summary.json"), {
     ok: true,
     run_id: runId,
-    started_at: session.started_at,
-    finished_at: session.finished_at,
-    totals: { events: eventsCount },
-    outcomes: counts,
-    last_decision: lastDecision,
-    refs: {
-      events_file: rel(episodeEvents),
-      policy_snapshot: fs.existsSync(POLICY_FILE)
-        ? rel(path.join(episodeDir, "policy_snapshot.json"))
-        : null
-    }
+    counts: {
+      ALLOW: counts.ALLOW || 0,
+      BLOCKED_BY_POLICY: counts.BLOCKED_BY_POLICY || 0,
+      NO_SESSION_OBSERVE_ONLY: counts.NO_SESSION_OBSERVE_ONLY || 0
+    },
+    last_ts: lastTs,
+    policy_ref: fs.existsSync(POLICY_FILE) ? "policy_snapshot.json" : null
   });
 
   console.log(
