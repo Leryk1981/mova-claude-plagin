@@ -1,8 +1,9 @@
 {
-  "": "https://opencode.ai/config.json",
+  "$schema": "https://opencode.ai/config.json",
   "default_agent": "coder",
-  "agent": {
+  "agents": {
     "coder": {
+      "model": "",
       "instructions": "You are a coding agent."
     }
   }
