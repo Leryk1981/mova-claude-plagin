@@ -5,4 +5,5 @@ local-notes/
 # --- MOVA OpenCode adapter allowlist (must be tracked) ---
 !adapters/
 !adapters/opencode/
-!adapters/opencode/**
+!adapters/opencode/**# runtime temp (opencode adapter)
+.mova/tmp/
