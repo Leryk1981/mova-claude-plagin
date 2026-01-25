@@ -7,6 +7,7 @@ const ROOT = path.resolve(__dirname, '..');
 const toolPath = path.join(ROOT, 'tools', 'capture_run_v0.mjs');
 const episodesTool = path.join(ROOT, 'tools', 'capture_run_to_episodes_v0.mjs');
 const patternsTool = path.join(ROOT, 'tools', 'analyze_patterns_basic_v0.mjs');
+const schemaPath = path.join(ROOT, 'schemas', 'patterns_basic_v0.schema.json');
 
 function assert(condition, message) {
   if (!condition) {
@@ -60,6 +61,27 @@ function scanForSecrets(text) {
     }
   }
   return null;
+}
+
+function validatePatternsSchema(payload) {
+  assert(payload && typeof payload === 'object', 'patterns.json should be an object');
+  assert(typeof payload.run_id === 'string', 'run_id should be string');
+  assert(typeof payload.generated_at_ms === 'number', 'generated_at_ms should be number');
+  assert(Array.isArray(payload.patterns), 'patterns should be array');
+
+  for (const pattern of payload.patterns) {
+    assert(typeof pattern.pattern_id === 'string', 'pattern_id should be string');
+    assert(pattern.kind === 'PATTERN.SEQUENCE', 'pattern kind must be PATTERN.SEQUENCE');
+    assert(Array.isArray(pattern.signature), 'signature should be array');
+    pattern.signature.forEach((item) => assert(typeof item === 'string', 'signature item should be string'));
+    assert(pattern.counts && typeof pattern.counts === 'object', 'counts should be object');
+    assert(typeof pattern.counts.seen === 'number', 'counts.seen should be number');
+    assert(typeof pattern.counts.cmd_fail === 'number', 'counts.cmd_fail should be number');
+    assert(typeof pattern.counts.repo_diff === 'number', 'counts.repo_diff should be number');
+    assert(pattern.score && typeof pattern.score === 'object', 'score should be object');
+    assert(typeof pattern.score.confidence === 'number', 'score.confidence should be number');
+    assert(typeof pattern.score.stability === 'number', 'score.stability should be number');
+  }
 }
 
 function run() {
@@ -137,11 +159,28 @@ function run() {
   if (fs.existsSync(path.join(artifactDir, 'repo_diff.patch'))) {
     assert(episodeKinds.includes('EP.REPO_DIFF'), 'missing EP.REPO_DIFF');
   }
+
   const patternsPath = path.join(artifactDir, 'patterns', 'patterns.json');
   assert(fs.existsSync(patternsPath), 'patterns.json not found');
+  const schema = JSON.parse(fs.readFileSync(schemaPath, 'utf8'));
+  assert(schema.title, 'schema missing title');
   const patterns = JSON.parse(fs.readFileSync(patternsPath, 'utf8'));
+  validatePatternsSchema(patterns);
   assert(patterns.patterns && patterns.patterns[0], 'patterns missing');
   assert(patterns.patterns[0].kind === 'PATTERN.SEQUENCE', 'pattern kind mismatch');
+
+  const corePath = path.join(artifactDir, 'patterns', 'patterns_core.json');
+  assert(fs.existsSync(corePath), 'patterns_core.json not found');
+  const coreFirst = fs.readFileSync(corePath, 'utf8');
+  const patternsResult2 = spawnSync('node', [patternsTool, '--run-dir', artifactDir], {
+    cwd: ROOT,
+    encoding: 'utf8'
+  });
+  if (patternsResult2.status !== 0) {
+    throw new Error(`analyze_patterns_basic_v0 repeat failed: ${patternsResult2.stderr || patternsResult2.stdout}`);
+  }
+  const coreSecond = fs.readFileSync(corePath, 'utf8');
+  assert(coreFirst === coreSecond, 'patterns_core.json not deterministic');
 
   console.log(`[PASS] capture_run_v0 smoke test -> ${artifactDir}`);
 }

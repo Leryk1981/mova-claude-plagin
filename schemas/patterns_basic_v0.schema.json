@@ -1,0 +1,46 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "PATTERN_ANALYZE basic v0",
+  "type": "object",
+  "required": ["run_id", "generated_at_ms", "patterns"],
+  "properties": {
+    "run_id": { "type": "string" },
+    "generated_at_ms": { "type": "number" },
+    "patterns": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["pattern_id", "kind", "signature", "counts", "score"],
+        "properties": {
+          "pattern_id": { "type": "string" },
+          "kind": { "const": "PATTERN.SEQUENCE" },
+          "signature": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "counts": {
+            "type": "object",
+            "required": ["seen", "cmd_fail", "repo_diff"],
+            "properties": {
+              "seen": { "type": "number" },
+              "cmd_fail": { "type": "number" },
+              "repo_diff": { "type": "number" }
+            },
+            "additionalProperties": false
+          },
+          "score": {
+            "type": "object",
+            "required": ["confidence", "stability"],
+            "properties": {
+              "confidence": { "type": "number" },
+              "stability": { "type": "number" }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}
