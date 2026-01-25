@@ -9,6 +9,7 @@ local-notes/
 
 # runtime temp (opencode adapter)
 .mova/tmp/
+artifacts/
 
 # allowlist for root OpenCode bridge commands
 !.opencode/commands/mova/
