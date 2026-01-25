@@ -66,6 +66,7 @@
     "test": "node test/test-runner.js && node test/capture-run-smoke.js && node scripts/mova-guard.smoke.js",
     "smoke:capture_run": "node test/capture-run-smoke.js",
     "smoke:capture_run:episodes": "node test/capture-run-smoke.js",
-    "smoke:capture_run:patterns": "node test/capture-run-smoke.js"
+    "smoke:capture_run:patterns": "node test/capture-run-smoke.js",
+    "smoke:capture_run:patterns:neg": "node test/capture-run-patterns-neg.js"
   }
 }
