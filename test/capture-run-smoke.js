@@ -6,6 +6,7 @@ const { spawnSync } = require('node:child_process');
 const ROOT = path.resolve(__dirname, '..');
 const toolPath = path.join(ROOT, 'tools', 'capture_run_v0.mjs');
 const episodesTool = path.join(ROOT, 'tools', 'capture_run_to_episodes_v0.mjs');
+const patternsTool = path.join(ROOT, 'tools', 'analyze_patterns_basic_v0.mjs');
 
 function assert(condition, message) {
   if (!condition) {
@@ -70,6 +71,13 @@ function run() {
   if (episodesResult.status !== 0) {
     throw new Error(`capture_run_to_episodes_v0 failed: ${episodesResult.stderr || episodesResult.stdout}`);
   }
+  const patternsResult = spawnSync('node', [patternsTool, '--run-dir', artifactDir], {
+    cwd: ROOT,
+    encoding: 'utf8'
+  });
+  if (patternsResult.status !== 0) {
+    throw new Error(`analyze_patterns_basic_v0 failed: ${patternsResult.stderr || patternsResult.stdout}`);
+  }
 
   const requiredFiles = [
     'env.json',
@@ -129,6 +137,11 @@ function run() {
   if (fs.existsSync(path.join(artifactDir, 'repo_diff.patch'))) {
     assert(episodeKinds.includes('EP.REPO_DIFF'), 'missing EP.REPO_DIFF');
   }
+  const patternsPath = path.join(artifactDir, 'patterns', 'patterns.json');
+  assert(fs.existsSync(patternsPath), 'patterns.json not found');
+  const patterns = JSON.parse(fs.readFileSync(patternsPath, 'utf8'));
+  assert(patterns.patterns && patterns.patterns[0], 'patterns missing');
+  assert(patterns.patterns[0].kind === 'PATTERN.SEQUENCE', 'pattern kind mismatch');
 
   console.log(`[PASS] capture_run_v0 smoke test -> ${artifactDir}`);
 }
